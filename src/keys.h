@@ -1,6 +1,8 @@
 #ifndef KEYS_H
 #define KEYS_H
 
+#define PORT 8888
+
 /*HEADER COMMANDS*/
 #define HEAD_HANDSHAKE    0xA0
 #define HEAD_REQUEST      0xA1
@@ -12,6 +14,10 @@
 #define HS_REGISTER     0xB2
 #define HS_GRANT        0xB3
 #define HS_REVOKE       0xB4
+
+/*HANDSHAKE STATUS*/
+#define HS_PENDING      0xB5
+#define HS_AUTH         0xB6
 
 /*SENSOR ADDRESS*/
 #define SA_TEMPERATURE      0xC1
