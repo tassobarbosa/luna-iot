@@ -15,7 +15,8 @@ class DataHandler {
     virtual ~DataHandler();        
 
     bool validatePacket(string buffer);
-    json mountPacket(int header, string addr, int command, string data);
+    json mountPacket(int header, string addr, int port, int command, string data);
+    string retrieveData(string buffer);
 
   private:
 

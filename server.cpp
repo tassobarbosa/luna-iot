@@ -1,11 +1,15 @@
 #include <iostream>
 #include "lib/json.hpp"
 #include "src/keys.h"
+#include "src/Server.hpp"
 #include "src/DataHandler.hpp"
 
 int main(){
-    DataHandler interface;
+    system("clear");
+    Server server;
 
-    std::cout<<"I am server\n";
+    server.startServer();
+    server.mainLoop();
+    
     return 0;
 }

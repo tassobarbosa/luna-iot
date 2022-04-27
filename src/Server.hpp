@@ -41,7 +41,11 @@ class Server {
         void mainLoop();
 
         void processData(string buffer);
-        void authenticateClient(string addr, int command);
+        void authenticateClient(string addr, int port, int command);
+        bool isAuthenticated(string addr, int port);
+        void readSensor(string addr, int port, int command);
+
+        string makeKey(string addr, int port);
 
     private:
                  

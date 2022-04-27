@@ -100,16 +100,17 @@ void Server::mainLoop(){
             if (FD_ISSET( sd , &readfds)) { 
                 valread = read( sd , buffer, 1024);
                 buffer[valread] = '\0';
+                cout << "RECV: " << buffer << "\r\n";
                 
-                if (dt_handler.validatePacket(string(buffer))) {                      
-                    //send(sd , buffer , strlen(buffer) , 0 ); 
+                if (dt_handler.validatePacket(string(buffer))) {                       
                     processData(string(buffer));
 
                 } else {
 
                     getpeername(sd , (struct sockaddr*)&address, (socklen_t*)&addrlen);  
-                    printf("Host disconnected, ip: %s, port: %d \n", inet_ntoa(address.sin_addr) , ntohs(address.sin_port)); 
-                    auth_clients.erase(inet_ntoa(address.sin_addr));      
+                    printf("Host disconnected, ip: %s, port: %d \n", inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
+
+                    auth_clients.erase(makeKey(inet_ntoa(address.sin_addr),ntohs(address.sin_port)));      
 
                     close(sd);  
                     client_socket[i] = 0; 
@@ -124,42 +125,49 @@ void Server::mainLoop(){
 void Server::processData(string buffer){
 
     string addr, data;
-    int header, command;
+    int header, command, port;
 
     json packet = json::parse(buffer);
 
     header = stoi(packet["header"].get<std::string>(), nullptr, 16);
     addr = packet["addr"].get<std::string>();
+    port = packet["port"].get<int>();
     command = stoi(packet["command"].get<std::string>(), nullptr, 16);
     data = packet["data"].get<std::string>();
     
     switch (header){
         case HEAD_HANDSHAKE:
-            authenticateClient(addr, command);
-            break;  
+            authenticateClient(addr, port, command);
+            break;
+        case HEAD_REQUEST:
+            if (isAuthenticated(addr, port))
+                readSensor(addr, port, command);
+            break;            
         default:
 
             break;
     }    
 }
 
-void Server::authenticateClient(string addr, int command){
+void Server::authenticateClient(string addr, int port, int command){
       
-    string data;
+    string packet;
 
     switch (command) {
         case HS_HELLO:
-            auth_clients.insert (std::pair<string,int>(addr, HS_PENDING));
-            data = dt_handler.mountPacket(HEAD_HANDSHAKE, addr, HS_WELCOME, "1").dump() + '\0';
-            send(sd, &data[0], data.size(), 0);
+            auth_clients.insert (std::pair<string,int>(makeKey(addr, port), HS_PENDING));
+            packet = dt_handler.mountPacket(HEAD_HANDSHAKE, addr, port, HS_WELCOME, "1").dump() + '\0';
+            send(sd, &packet[0], packet.size(), 0);
+            cout << "SENT: " << packet << "\r\n";
             break;
 
         case HS_REGISTER:
-            it = auth_clients.find(addr);
+            it = auth_clients.find(makeKey(addr, port));
             if (it != auth_clients.end()){
-                auth_clients[addr] = HS_AUTH;
-                data = dt_handler.mountPacket(HEAD_HANDSHAKE, addr, HS_GRANT, "1").dump() + '\0';
-                send(sd, &data[0], data.size(), 0);
+                auth_clients[makeKey(addr, port)] = HS_AUTH;
+                packet = dt_handler.mountPacket(HEAD_HANDSHAKE, addr, port, HS_GRANT, "1").dump() + '\0';
+                send(sd, &packet[0], packet.size(), 0);
+                cout << "SENT: " << packet << "\r\n";
             }
             break;    
 
@@ -167,8 +175,53 @@ void Server::authenticateClient(string addr, int command){
             break;
     }  
 
+    cout << "Pool connection:\r\n";
+    for (it=auth_clients.begin(); it!=auth_clients.end(); ++it){
+        if(it->second == HS_AUTH) std::cout << it->first << " => GRANTED" << '\n';
+        else std::cout << it->first << " => PENDING" << '\n';
+    }    
 
-  for (it=auth_clients.begin(); it!=auth_clients.end(); ++it)
-    std::cout << it->first << " => " <<hex<< it->second << '\n';
+}
 
+bool Server::isAuthenticated(string addr, int port){
+    it = auth_clients.find(makeKey(addr, port));
+    if (it != auth_clients.end()){
+        cout<<"CLI is authorized\r\n";
+        return true;
+    }    
+
+    return false;
+}
+
+void Server::readSensor(string addr, int port, int command){
+    string packet, data;    
+
+    switch (command) {
+        case SA_TEMPERATURE:
+            cout<<"Fake reading TEMP sensor...\r\n";
+            data = "30";
+            break;
+        case SA_DATE:
+            cout<<"Fake reading RTC...\r\n";
+            data = "27/04/22 20:25:27";
+            break;            
+        case SA_GPS:
+            cout<<"Fake reading GPS...\r\n";
+            data = "281546S522425O";
+            break;
+        default:
+            break;
+    }  
+
+
+    packet = dt_handler.mountPacket(HEAD_REQUEST, addr, port, command, data).dump() + '\0';
+    send(sd, &packet[0], packet.size(), 0);
+    cout << "SENT: " << packet << "\r\n";    
+
+}
+
+
+
+string Server::makeKey(string addr, int port){
+    return addr + ":" + to_string(port);
 }
