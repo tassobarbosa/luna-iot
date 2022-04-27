@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <map>
 
 #include "DataHandler.hpp"
 #include "keys.h"
@@ -21,7 +22,9 @@ class Client {
         bool auth;
         string addr;
         int port;
+
         DataHandler dt_handler;
+        map <int, std::string> sensor_state;
 
         struct sockaddr_in serv_addr;        
 
@@ -30,8 +33,11 @@ class Client {
 
         int menu();
         int readMenu();
+        int writeMenu();
+        void showReadings();
 
         bool authenticateServer();
-        string requestInfo(int sensor);
+        string requestInfo(int sensor);        
+        void writeInfo(int sensor, int cmd);
 
 };

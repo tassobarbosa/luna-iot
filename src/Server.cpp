@@ -2,6 +2,17 @@
 
 Server::Server(){ 
     auth_clients.empty();
+
+    //fake initial values
+    power = "on";
+    date = "27/04/22 20:43:17";
+    wifi = "off";
+    bluetooth = "off";
+    camera = "off";
+    temperature = "40";
+    gps = "27/04/22 20:25:27";
+    accel = "x120y90z20";
+    gyro = "x90y70z12";    
 }
 
 Server::~Server(){
@@ -45,8 +56,20 @@ void Server::startServer(){
     }  
              
     addrlen = sizeof(address);  
-    puts("Server is ready to connect!");
+    printf("Server is ready to connect!\r\n\n");
 	
+}
+
+void Server::closeSockets(){
+    for (i = 0; i < max_clients; i++) {  
+        sd = client_socket[i];  
+        getpeername(sd , (struct sockaddr*)&address, (socklen_t*)&addrlen);
+        
+        auth_clients.erase(makeKey(inet_ntoa(address.sin_addr),ntohs(address.sin_port)));      
+
+        close(sd);  
+        client_socket[i] = 0;             
+    }
 }
 
 void Server::mainLoop(){
@@ -88,7 +111,7 @@ void Server::mainLoop(){
             for (i = 0; i < max_clients; i++){  
                 if( client_socket[i] == 0 ){  
                     client_socket[i] = new_socket;  
-                    printf("Adding to list of sockets as %d\n", i);
+                    printf("Adding to list of sockets as %d\n\n", i);
                     break;  
                 }  
             }  
@@ -109,7 +132,7 @@ void Server::mainLoop(){
 
                     getpeername(sd , (struct sockaddr*)&address, (socklen_t*)&addrlen);  
                     printf("Host disconnected, ip: %s, port: %d \n", inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
-
+                    
                     auth_clients.erase(makeKey(inet_ntoa(address.sin_addr),ntohs(address.sin_port)));      
 
                     close(sd);  
@@ -142,7 +165,11 @@ void Server::processData(string buffer){
         case HEAD_REQUEST:
             if (isAuthenticated(addr, port))
                 readSensor(addr, port, command);
-            break;            
+            break;      
+        case HEAD_WRITE:
+            if (isAuthenticated(addr, port))
+                controlHardware(command, data);
+            break;      
         default:
 
             break;
@@ -175,20 +202,20 @@ void Server::authenticateClient(string addr, int port, int command){
             break;
     }  
 
-    cout << "Pool connection:\r\n";
-    for (it=auth_clients.begin(); it!=auth_clients.end(); ++it){
-        if(it->second == HS_AUTH) std::cout << it->first << " => GRANTED" << '\n';
-        else std::cout << it->first << " => PENDING" << '\n';
+    cout << "Pool connections:\r\n";
+    for (it=auth_clients.begin(); it!=auth_clients.end(); ++it){        
+        if(it->second == HS_AUTH) std::cout << "\t" << it->first << " => GRANTED" << "\n";
+        else std::cout << "\t" << it->first << " => PENDING" << "\n";
     }    
-
+    cout<<"\r\n";
 }
 
 bool Server::isAuthenticated(string addr, int port){
     it = auth_clients.find(makeKey(addr, port));
-    if (it != auth_clients.end()){
-        cout<<"CLI is authorized\r\n";
+    
+    if (it != auth_clients.end()){        
         return true;
-    }    
+    }
 
     return false;
 }
@@ -197,18 +224,42 @@ void Server::readSensor(string addr, int port, int command){
     string packet, data;    
 
     switch (command) {
-        case SA_TEMPERATURE:
-            cout<<"Fake reading TEMP sensor...\r\n";
-            data = "30";
+        case SA_WIFI:
+            cout<<"Fake reading WIFI...\r\n";
+            data = wifi;
+            break;
+        case SA_BLUETOOTH:
+            cout<<"Fake reading BLUETOOTH...\r\n";
+            data = bluetooth;
+            break;
+        case SA_CAMERA:
+            cout<<"Fake reading CAMERA...\r\n";
+            data = camera;
             break;
         case SA_DATE:
             cout<<"Fake reading RTC...\r\n";
-            data = "27/04/22 20:25:27";
+            data = date;
             break;            
+        case SA_TEMPERATURE:
+            cout<<"Fake reading TEMP sensor...\r\n";
+            data = temperature;
+            break;                                   
         case SA_GPS:
             cout<<"Fake reading GPS...\r\n";
-            data = "281546S522425O";
+            data = gps;
             break;
+        case SA_ACCEL:
+            cout<<"Fake reading ACCEL...\r\n";
+            data = accel;
+            break;
+        case SA_GYRO:
+            cout<<"Fake reading GYRO...\r\n";
+            data = gyro;
+            break;
+        case SA_ALL:
+
+            break;
+                                    
         default:
             break;
     }  
@@ -216,11 +267,39 @@ void Server::readSensor(string addr, int port, int command){
 
     packet = dt_handler.mountPacket(HEAD_REQUEST, addr, port, command, data).dump() + '\0';
     send(sd, &packet[0], packet.size(), 0);
-    cout << "SENT: " << packet << "\r\n";    
+    cout << "SENT: " << packet << "\r\n\n";    
 
 }
 
+void Server::controlHardware(int command, string data){
+    string packet;    
 
+    switch (command) {
+        case SA_POWER:
+            if(data == "off"){
+                cout<<"Turning off... Bye!!\r\n\n";
+                power = data;
+                closeSockets();
+                exit(EXIT_SUCCESS);
+            }
+            break;        
+        case SA_WIFI:
+            cout<<"Turning wifi "<<data<<"\r\n\n";
+            wifi = data;
+            break;
+        case SA_BLUETOOTH:
+            cout<<"Turning bluetooth "<<data<<"\r\n\n";
+            bluetooth = data;
+            break;
+        case SA_CAMERA:            
+            cout<<"Turning camera "<<data<<"\r\n\n";
+            camera = data;
+            break;                                    
+        default:
+            break;
+    }  
+
+}
 
 string Server::makeKey(string addr, int port){
     return addr + ":" + to_string(port);

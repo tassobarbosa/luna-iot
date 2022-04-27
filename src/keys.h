@@ -20,12 +20,19 @@
 #define HS_AUTH         0xB6
 
 /*SENSOR ADDRESS*/
-#define SA_TEMPERATURE      0xC1
-#define SA_DATE             0xC2
-#define SA_GPS              0xC3
-#define SA_ACCEL            0xC4
-#define SA_GYRO             0xC5
-#define SA_CAMERA           0xC6
+#define SA_POWER            0xC0
+#define SA_WIFI             0xC1
+#define SA_BLUETOOTH        0xC2
+#define SA_CAMERA           0xC3
+#define SA_DATE             0xC4
+#define SA_TEMPERATURE      0xC5
+#define SA_GPS              0xC6
+#define SA_ACCEL            0xC7
+#define SA_GYRO             0xC8
+#define SA_ALL              0xC9
+
+
+
 
 
 #endif

@@ -36,14 +36,18 @@ class Server {
         DataHandler dt_handler;
         map <std::string, int> auth_clients;
         std::map<string, int>::iterator it;
+
+        string power, date, wifi, bluetooth, camera, temperature, gps, accel, gyro;
         
         void startServer();
+        void closeSockets();
         void mainLoop();
 
         void processData(string buffer);
         void authenticateClient(string addr, int port, int command);
         bool isAuthenticated(string addr, int port);
         void readSensor(string addr, int port, int command);
+        void controlHardware(int command, string data);
 
         string makeKey(string addr, int port);
 
