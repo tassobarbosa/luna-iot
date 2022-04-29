@@ -2,7 +2,7 @@ CC	= g++
 CPPFLAGS = -Iinclude
 CFLAGS   = -Wall
 LDFLAGS  = -Llib
-LDLIBS   = -lm
+LDLIBS   = -lm -pthread
 ARGS = $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(LDLIBS)
 
 all: server client

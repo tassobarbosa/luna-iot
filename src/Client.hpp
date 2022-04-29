@@ -7,6 +7,7 @@
 #include <map>
 
 #include "DataHandler.hpp"
+#include "../lib/timercpp.h"
 #include "keys.h"
 
 using namespace std;
@@ -22,13 +23,15 @@ class Client {
         bool auth;
         string addr;
         int port;
+        Timer t_polling;
 
-        DataHandler dt_handler;
+        DataHandler dt_handler;        
         map <int, std::string> sensor_state;
 
         struct sockaddr_in serv_addr;        
 
         void startClient();
+        void closeClient();
         void mainLoop();
 
         int menu();
@@ -39,5 +42,6 @@ class Client {
         bool authenticateServer();
         string requestInfo(int sensor);        
         void writeInfo(int sensor, int cmd);
+        void pollingRequest();
 
 };

@@ -48,6 +48,7 @@ class Server {
         bool isAuthenticated(string addr, int port);
         void readSensor(string addr, int port, int command);
         void controlHardware(int command, string data);
+        void ackPolling(string addr, int port, int command);
 
         string makeKey(string addr, int port);
 

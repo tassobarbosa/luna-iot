@@ -100,11 +100,27 @@ void Client::writeInfo(int sensor, int cmd){
 	sensor_state[sensor] = data;
 }
 
+void Client::pollingRequest(){
+	string packet, res;
+	packet = dt_handler.mountPacket(HEAD_POOLING, addr, port, PC_CTRL, "1").dump() + '\0';
+	send(sock, &packet[0], packet.size(), 0);
+
+	if(!read(sock, buffer, 1024)){
+		cout<<"POLLING TIMEOUT!\n";
+		t_polling.stop();
+		closeClient();
+		auth = 0;		
+		return;
+	}
+}
+
 bool Client::authenticateServer(){
 	string packet;	
 
 	packet = dt_handler.mountPacket(HEAD_HANDSHAKE, addr, port, HS_HELLO, "1").dump() + '\0';
-    send(sock, &packet[0], packet.size(), 0);
+    if(!send(sock, &packet[0], packet.size(), 0)){
+		cout<<"erro!\n"; closeClient(); return false;
+	}
 	cout << "SENT: " << packet << "\r\n";
 
 	read(sock, buffer, 1024);
@@ -145,8 +161,9 @@ void Client::startClient(){
 
 	if (connect(sock, (struct sockaddr*)&serv_addr,sizeof(serv_addr))< 0) {
 		printf("\nConnection Failed \n");
+		sock = 0;
 		return;
-	}
+	}	
 
 	//Get my credentials
     struct sockaddr_in name;
@@ -160,6 +177,11 @@ void Client::startClient(){
 
 }
 
+void Client::closeClient(){
+	cout<<"Closing client!\n";
+	sock = 0;
+}
+
 void Client::mainLoop(){
     
 	string data;
@@ -168,9 +190,17 @@ void Client::mainLoop(){
 
 		switch (menu()){
 			case 1: //AUTH
-				if(!auth){
-					auth = authenticateServer();
+			if(sock < 1) startClient();
+			
+			if(!auth && sock > 0){
+				auth = authenticateServer();
+				if(auth) {
+					t_polling.setInterval([&]() {
+						pollingRequest();
+					}, PC_TIME); 						
 				}
+			}
+			
 				break;
 			
 			case 2: //READ

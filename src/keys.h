@@ -7,6 +7,7 @@
 #define HEAD_HANDSHAKE    0xA0
 #define HEAD_REQUEST      0xA1
 #define HEAD_WRITE        0xA2
+#define HEAD_POOLING      0xA3
 
 /*HANDSHAKE COMMANDS*/
 #define HS_HELLO        0xB0
@@ -30,6 +31,11 @@
 #define SA_ACCEL            0xC7
 #define SA_GYRO             0xC8
 #define SA_ALL              0xC9
+
+/*POLLING COMMANDS*/
+#define PC_ACK          0xD0
+#define PC_CTRL         0xD1
+#define PC_TIME         60000
 
 
 

@@ -169,7 +169,11 @@ void Server::processData(string buffer){
         case HEAD_WRITE:
             if (isAuthenticated(addr, port))
                 controlHardware(command, data);
-            break;      
+            break; 
+        case HEAD_POOLING:
+            if (isAuthenticated(addr, port))
+                ackPolling(addr, port, command);
+            break;    
         default:
 
             break;
@@ -272,7 +276,7 @@ void Server::readSensor(string addr, int port, int command){
 }
 
 void Server::controlHardware(int command, string data){
-    string packet;    
+    string packet;   
 
     switch (command) {
         case SA_POWER:
@@ -299,6 +303,23 @@ void Server::controlHardware(int command, string data){
             break;
     }  
 
+}
+
+void Server::ackPolling(string addr, int port, int command){
+    string packet, data;
+
+    switch (command) {
+        case PC_CTRL:
+            data = "1";
+            break;
+        default:
+            break;
+    }
+
+    packet = dt_handler.mountPacket(HEAD_POOLING, addr, port, PC_ACK, data).dump() + '\0';
+    send(sd, &packet[0], packet.size(), 0);
+    cout << "SENT ACK: " << packet << "\r\n\n";    
+ 
 }
 
 string Server::makeKey(string addr, int port){
